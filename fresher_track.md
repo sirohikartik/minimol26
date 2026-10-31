@@ -1,50 +1,47 @@
 # Problem Statement: Reach Together (`fresher_track`)
 
 ## Objective
-Build a web or mobile application that connects people traveling to the same destination (e.g., students heading to the airport, railway station, concert, or commuting home) so they can travel together, share rides/fares, and ensure personal safety.
+Build a clean, user-friendly web or mobile application that connects students traveling to the same destination (e.g., heading to the airport, railway station, concert, or going home for the weekend) so they can travel together, share cab fares, and feel safer.
 
-The application must dynamically match users based on **route corridor overlap, flexible departure time windows, and trust/safety preferences**, rather than basic exact-destination string matching.
+The challenge focuses on **clean user experience (UI/UX), intuitive trip discovery, and practical student safety features**.
 
 ---
 
 ## Target Environment & Stack Freedom
-* **Platforms:** Web application (responsive mobile-web) or native mobile app (React Native, Flutter, Swift, etc.).
+* **Platforms:** Web application (responsive mobile-web) or native mobile app (React, Vue, Next.js, Flutter, React Native, etc.).
 * **Target Audience:** College students / freshers traveling with luggage, late-night transit, or daily campus commuters.
 
 ---
 
-## Core Functional Capabilities
-1. **Spatio-Temporal Trip Matching Engine:**
-   * Matches travelers not just by identical endpoints, but along **overlapping route corridors** (e.g., picking up a co-traveler along the way within a maximum acceptable detour tolerance).
-   * Supports **flexible departure windows** (e.g., *"departing between 4:00 PM and 4:30 PM"*).
-2. **Dynamic Travel Groups & Capacity Management:**
-   * Once a match is found, creates an ephemeral travel pool with strict capacity limits (e.g., 3-4 passengers for a cab/auto).
-   * Includes an interactive approval workflow (host/group can accept or decline join requests).
-3. **Safety & Preference Guardrails:**
-   * Allows users to set safety filters (e.g., gender-preferred travel groups for late-night transit, verified campus email requirement).
-   * Emergency/safety sharing: one-click trip itinerary and live tracking link shareable with trusted contacts.
-4. **Automated Fair Fare Splitting:**
-   * Calculates dynamic cost-per-person based on pickup/drop-off distances or equal split, generating payment breakdown summaries.
-5. **Real-Time Group Coordination:**
-   * Live in-trip coordination: shared meeting point selection, group chat/status updates, and departure countdown.
+## Core Features to Build
+1. **Trip Posting & Discovery:**
+   * **Post a Trip:** Users can create an upcoming ride (Origin, Destination, Date/Time window, and available seats).
+   * **Find Trips:** Search trips heading to the same destination/hub within a similar time window (e.g., departing within $\pm 30$–$60$ minutes).
+2. **Travel Pool Formation & Capacity:**
+   * Display open travel pools with visual seat indicators (e.g., "2 of 4 seats open").
+   * Join request flow: Co-travelers can request to join a pool, and the host can accept or decline.
+   * Auto-lock: Disables join requests once the vehicle reaches full capacity (e.g., max 4 passengers).
+3. **Simple Fare Split Calculator:**
+   * Shows an estimated total ride cost and automatically calculates each person's share as new members join the pool.
+4. **Safety & Privacy:**
+   * Contact details (phone number/full address) remain hidden until the host approves the travel request.
 
 ---
 
 ## Brownie Points Feature (Bonus)
-* **★ Women-Only Travel Pools:** A dedicated safety filter and verification workflow allowing female travelers to create and join **exclusive female-only travel groups** for late-night journeys, airport cabs, or transit safety. Non-eligible users cannot see or request to join these pools.
+* **★ Women-Only Travel Pools:** A dedicated safety filter and toggle allowing female students to create and discover **exclusive female-only travel groups** for late-night rides or transit safety. Non-eligible profiles cannot see or request to join these pools.
 
 ---
 
 ## Hard Requirements
-1. **Algorithmic Corridor Matching:** The search engine must calculate spatial proximity (e.g., bounding boxes or route proximity) and time overlap. It cannot rely on naive exact string equality of location names.
-2. **Real-Time Group State Sync:** When a user requests to join a pool, acceptances, rejections, and capacity state changes must update in real time across all members' devices without requiring manual page reloads.
-3. **Privacy by Default:** Exact pickup addresses and personal phone numbers must remain masked until both parties mutually accept the travel match.
-4. **Responsive Mobile-First UX:** The app must be fully optimized for mobile devices, supporting instant trip posting and 1-tap join requests on the go.
+1. **Functional Trip Matching:** Searching for trips must match both the destination area and overlapping departure time windows.
+2. **Interactive Seat Capacity:** Seat availability must update dynamically when a member is added, and the app must prevent overbooking.
+3. **Clean & Responsive UI/UX:** The interface must be visually polished, intuitive for first-time users, and responsive on mobile screens.
+4. **Privacy Protection:** Personal contact numbers must remain masked until a travel request is approved by the host.
 
 ---
 
 ## Strictly Prohibited
-* **NO Naive String-Only Matching:** Searching for trips cannot just check `if (trip.destination === user.destination)`. It must account for coordinate distances and departure time windows.
-* **NO Fake Static Mock Data:** Submissions must demonstrate live interactive matching where creating a trip on User Device A appears in real time in search results on User Device B.
-* **NO Unauthenticated Open Contact Leaks:** User contact details or live coordinates must not be publicly exposed to unmatched users.
-* **NO Overbooking:** The system must strictly enforce vehicle capacity limits and reject join requests once a pool is full.
+* **NO Static Non-Interactive Mockups:** The app must be functional (creating a trip in one browser tab/device must be searchable and joinable from another).
+* **NO Unmasked Contact Leaks:** User contact details must not be publicly exposed to strangers on the open search feed.
+* **NO Overbooking:** The pool must not allow more passengers than the specified vehicle seat capacity.
