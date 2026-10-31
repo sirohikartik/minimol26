@@ -1,9 +1,11 @@
-# Problem Statement: Autonomous Intersection — Decentralized Multi-Agent Traffic Control
+# Problem Statement: Autonomous Intersection — LLM-Driven Multi-Agent Traffic Control
 
 ## Objective
-Program autonomous driving agents for **20 vehicles** navigating a busy 4-way intersection controlled by dynamic traffic lights.
+Program an autonomous traffic simulation where **20 vehicles** navigate a busy 4-way intersection controlled by dynamic traffic lights.
 
-Each vehicle operates as an **independent decentralized agent**. Vehicles must obey traffic laws, prevent collisions, avoid deadlocks, and maximize throughput across the intersection.
+Instead of traditional hardcoded physics scripts, the driving decisions for all 20 vehicles must be **driven by an LLM via an API**. At each decision tick, the system makes **one single batch LLM API call** that outputs the next driving instructions for each of the 20 cars simultaneously.
+
+Vehicles must obey traffic laws, prevent collisions, avoid deadlocks, and maximize intersection throughput based on the LLM's real-time decisions.
 
 ---
 
@@ -13,37 +15,61 @@ Each vehicle operates as an **independent decentralized agent**. Vehicles must o
 * **Dimension & Style:** Teams are free to render the simulation as a **2D top-down view** or an interactive **3D perspective scene**.
 * **Visual Requirements:**
   * Must visually render the 4-way intersection, traffic lanes, moving cars, and dynamic traffic light signals (Red, Yellow, Green).
-  * Must display a real-time HUD / metrics overlay showing: Collision counter (must be 0), active vehicles, and total vehicles safely cleared.
+  * Must display a real-time HUD showing: Collision counter (must be 0), active LLM API latency (ms), and total vehicles safely cleared.
 
 ---
 
-## The Core Constraint: Strict Local Observability
-**No global coordinates, central coordinator, or omniscient map data is permitted.**
+## The LLM Batch API Architecture
+To maintain real-time simulation speeds and avoid rate-limiting, individual API calls per car are forbidden.
 
-Each car agent receives **only local sensor telemetry**:
-1. **Front Sensor:** Distance and relative velocity of the vehicle directly ahead.
-2. **Rear Sensor:** Distance and relative velocity of the vehicle directly behind.
+```
+[ Simulation State (20 Cars) ]
+             │
+             ▼
+ 1. Extract Local Telemetry for Cars 0..19 (Front, Rear, Side, Signal)
+             │
+             ▼
+ 2. Send ONE Single Batch Prompt to LLM API
+             │
+             ▼
+ 3. LLM Returns Structured JSON with Next Actions for ALL 20 Cars
+    [
+      { "id": 0, "action": "ACCELERATE", "throttle": 0.8 },
+      { "id": 1, "action": "BRAKE", "intensity": 0.5 },
+      ...
+      { "id": 19, "action": "MAINTAIN" }
+    ]
+             │
+             ▼
+ 4. Simulation applies physics and renders next frame
+```
+
+---
+
+## The Core Constraint: Strict Local Observability per Car
+Even though a single batch API call is used, the prompt given to the LLM must **not** provide global (x, y) coordinates or an omniscient bird's-eye map.
+
+For each car `i`, the LLM prompt may **only contain local sensor telemetry**:
+1. **Front Sensor:** Distance and relative velocity ($\Delta v$) of the vehicle directly ahead.
+2. **Rear Sensor:** Distance and relative velocity of the vehicle behind.
 3. **Side / Blind-Spot Sensors:** Proximity of adjacent vehicles in left/right lanes.
-4. **Traffic Signal Sensor:** Current state of the traffic light facing the vehicle's active lane (`RED`, `YELLOW`, or `GREEN`) and distance to the intersection stop line.
+4. **Signal Sensor:** Current state of the traffic light facing that car's lane (`RED`, `YELLOW`, or `GREEN`) and distance to the stop line.
 
-Agents cannot query other vehicles' planned routes, destinations, or global positions.
+The LLM must reason through local spatial relationships across all 20 cars in a single pass without crashing.
 
 ---
 
 ## Hard Requirements
-1. **Zero Collisions:** Under no circumstance may any vehicle make physical contact with another vehicle.
-2. **Traffic Law Compliance:**
-   * Stop behind the stop line on `RED`.
-   * Obey safe stopping distance rules on `YELLOW` (stop if safe, clear if past point-of-no-return).
-   * Maintain safe following distance (Time-to-Collision > threshold).
-   * Do not block the intersection box on yellow/red (no gridlocking).
-3. **Decentralized Decision-Making:** Every vehicle executes its own independent decision loop per simulation tick based strictly on its local sensor readings.
-4. **Throughput Efficiency:** Vehicles must not freeze indefinitely. Cars must cross the intersection safely and efficiently when right-of-way is clear.
+1. **Zero Collisions:** The LLM's generated instructions must never cause any two vehicles to make physical contact. A single crash is an immediate failure.
+2. **One Single Batch API Call:** Decisions for all 20 vehicles per step must be generated by a **single LLM API request**.
+3. **Strict Structured Output:** The LLM must reliably return valid, parseable JSON containing explicit instructions for all active vehicles.
+4. **Traffic Law Compliance:** Vehicles guided by the LLM must stop on `RED`, resolve the `YELLOW` stopping dilemma, and avoid blocking the intersection box.
+5. **Decentralized Local Telemetry:** The batch prompt to the LLM must strictly package local sensor readings per car, not global ground-truth map coordinates.
 
 ---
 
 ## Strictly Prohibited
-* **NO Global State Access:** Agents querying the simulation world object for positions, speeds, or intentions of vehicles outside their immediate local sensor ranges.
-* **NO Central Traffic Dispatcher:** No single "god-mode" controller telling all 20 cars when to move or stop.
-* **NO Teleportation or Instant Braking:** Vehicles are subject to physical acceleration and deceleration limits; cars cannot stop instantaneously from full speed.
-* **NO Lane Hopping:** Vehicles must respect lane boundaries and follow their designated straight/turn lanes.
+* **NO Separate API Calls per Vehicle:** Firing 20 separate API requests per tick is strictly banned (will trigger rate limits and freeze the simulation).
+* **NO Global Map Coordinates in Prompts:** Prompts cannot feed global (x, y) world positions or omniscient grid matrices to the LLM.
+* **NO Hardcoded Collision Overrides:** Hardcoding a rule that ignores the LLM and artificially stops a car right before a crash is prohibited. The vehicle's physical acceleration/braking must reflect the LLM's actual output.
+* **NO Teleportation or Instant Braking:** Vehicles are subject to physical acceleration/deceleration limits; cars cannot stop instantaneously from full speed.
